@@ -634,17 +634,29 @@ func NewRunConfig(files common.ProblemFiles, generateOutputFiles bool) (*RunConf
 	}
 
 	if config.TestsSettings.InputsValidator != nil {
-		language := config.TestsSettings.InputsValidator.Language
+		inputsValidatorSettings := config.TestsSettings.InputsValidator
+		language := inputsValidatorSettings.Language
 		if language == "" {
-			ext := filepath.Ext(config.TestsSettings.InputsValidator.Filename)
+			ext := filepath.Ext(inputsValidatorSettings.Filename)
 			if ext == "" {
 				return nil, errors.Errorf(
 					"failed to get input validator language for %s in %s",
-					config.TestsSettings.InputsValidator.Filename,
+					inputsValidatorSettings.Filename,
 					files.String(),
 				)
 			}
 			language = common.FileExtensionLanguage(ext[1:])
+		}
+
+		// ensure that all invalid inputs have an associated failure string
+		for caseName, _ := range invalidInputCases {
+			_, ok := inputsValidatorSettings.ExpectedValidatorStderrInvalidCases[caseName]
+			if !ok {
+				return nil, errors.Errorf(
+					"missing expected validator stderr for invalid input: %s",
+					caseName,
+				)
+			}
 		}
 
 		for _, params := range []struct {
@@ -653,22 +665,26 @@ func NewRunConfig(files common.ProblemFiles, generateOutputFiles bool) (*RunConf
 			expectedSolution *common.SolutionSettings
 		}{
 			// Real test cases to validate
-			{"inputs", config.Input.Cases, nil},
+			{"inputs",
+				config.Input.Cases,
+				&common.SolutionSettings{Verdict: "AC"}},
 			// Known invalid test cases
-			{"invalid-inputs", invalidInputCases, &common.SolutionSettings{Verdict: "WA"}},
+			{"invalid-inputs",
+				invalidInputCases,
+				&common.SolutionSettings{
+					Verdict:                 "WA",
+					ExpectedValidatorStderr: inputsValidatorSettings.ExpectedValidatorStderrInvalidCases,
+				},
+			},
 		} {
 			params := params
-
-			if params.reportType == "invalid-inputs" && len(params.cases) == 0 {
-				continue
-			}
 
 			testConfig := &TestConfig{
 				Test: &ReportTest{
 					Index:                  len(config.TestConfigs),
 					Type:                   params.reportType,
-					Filename:               config.TestsSettings.InputsValidator.Filename,
-					InputsValidatorSetting: config.TestsSettings.InputsValidator,
+					Filename:               inputsValidatorSettings.Filename,
+					InputsValidatorSetting: inputsValidatorSettings,
 					SolutionSetting:        params.expectedSolution,
 				},
 				Solution: SolutionConfig{

@@ -245,11 +245,12 @@ func (r *ScoreRange) UnmarshalJSON(data []byte) error {
 // SolutionSettings represents a single testcase with an expected score range
 // and/or verdict. At least one of those must be present.
 type SolutionSettings struct {
-	Filename                   string      `json:"filename"`
-	ScoreRange                 *ScoreRange `json:"score_range,omitempty"`
-	Verdict                    string      `json:"verdict,omitempty"`
-	Language                   string      `json:"language,omitempty"`
-	AllowFractionalPercentages bool        `json:"allow_fractional_percentages,omitempty"`
+	Filename                   string            `json:"filename"`
+	ScoreRange                 *ScoreRange       `json:"score_range,omitempty"`
+	Verdict                    string            `json:"verdict,omitempty"`
+	Language                   string            `json:"language,omitempty"`
+	AllowFractionalPercentages bool              `json:"allow_fractional_percentages,omitempty"`
+	ExpectedValidatorStderr    map[string]string `json:"expected_validator_stderr,omitempty"`
 }
 
 // String returns a string representation of the SolutionSettings.
@@ -262,8 +263,9 @@ func (s *SolutionSettings) String() string {
 
 // InputsValidatorSettings represents a validator for the .in files.
 type InputsValidatorSettings struct {
-	Filename string `json:"filename"`
-	Language string `json:"language,omitempty"`
+	Filename                            string            `json:"filename"`
+	Language                            string            `json:"language,omitempty"`
+	ExpectedValidatorStderrInvalidCases map[string]string `json:"expected_validator_stderr_invalid,omitempty"`
 }
 
 // TestsSettings represent the tests that are to be run against the problem
